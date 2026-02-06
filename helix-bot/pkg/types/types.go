@@ -15,7 +15,7 @@ type InputFile struct {
 
 // SendOption for sendMessage/sendPhoto/sendDocument.
 type SendOption struct {
-	ParseMode         string // "MarkdownV2" / "HTML" / ""
+	ParseMode        string // "MarkdownV2" / "HTML" / ""
 	DisablePreview   bool
 	ReplyToMessageID int64
 	ReplyMarkup      any

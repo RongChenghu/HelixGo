@@ -12,8 +12,21 @@ import (
 func New(cfg config.Config) ports.Bot {
 	log := NewStdLogger("[helix-bot]")
 	client := telegram.NewClient(cfg.TelegramBotToken)
-	source := telegram.NewSource(cfg.TelegramBotToken, cfg.TelegramPollingTimeout, cfg.PollOffsetFile, log)
+	var source ports.UpdateSource
+	var ws *telegram.WebhookSource
+	switch cfg.Mode {
+	case "webhook":
+		ws = telegram.NewWebhookSource(cfg.HTTPListenAddr, cfg.WebhookSecret, log)
+		source = ws
+	default:
+		source = telegram.NewSource(cfg.TelegramBotToken, cfg.TelegramPollingTimeout, cfg.PollOffsetFile, log)
+	}
 	r := router.New()
 	rt := runtime.NewBotRuntime(r, source, log, client)
+	if ws != nil {
+		ws.SetReadyCheck(func() bool {
+			return rt.State().Started
+		})
+	}
 	return rt
 }

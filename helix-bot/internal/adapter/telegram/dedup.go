@@ -5,9 +5,9 @@ const defaultDedupWindow = 2000
 // Deduper 用于维护最近 N 个 update_id，防止重复执行 handler。
 // 结构：一个定长 ring + 一个 map 做 O(1) 查重。
 type Deduper struct {
-	cap  int        // 窗口大小
-	ring []int64    // 环形数组，存最近的 id
-	idx  int        // 当前写入位置
+	cap  int     // 窗口大小
+	ring []int64 // 环形数组，存最近的 id
+	idx  int     // 当前写入位置
 	seen map[int64]struct{}
 }
 

@@ -26,15 +26,15 @@ const (
 
 // Source implements ports.UpdateSource via Telegram getUpdates long polling.
 type Source struct {
-	Token         string
-	Timeout       time.Duration
-	OffsetFile    string // optional; persist offset for restart
-	offset        int64
-	dedup         *Deduper
-	logger        ports.Logger
-	stop          chan struct{}
-	stopped       chan struct{}
-	once          sync.Once
+	Token      string
+	Timeout    time.Duration
+	OffsetFile string // optional; persist offset for restart
+	offset     int64
+	dedup      *Deduper
+	logger     ports.Logger
+	stop       chan struct{}
+	stopped    chan struct{}
+	once       sync.Once
 }
 
 // NewSource creates an UpdateSource for long polling.
@@ -239,9 +239,9 @@ func (s *Source) Stop() error {
 }
 
 type tgUpdate struct {
-	UpdateID      int64        `json:"update_id"`
-	Message       *tgMessage   `json:"message,omitempty"`
-	CallbackQuery *tgCallback  `json:"callback_query,omitempty"`
+	UpdateID      int64       `json:"update_id"`
+	Message       *tgMessage  `json:"message,omitempty"`
+	CallbackQuery *tgCallback `json:"callback_query,omitempty"`
 }
 
 type tgMessage struct {
@@ -260,10 +260,10 @@ type tgUser struct {
 }
 
 type tgCallback struct {
-	ID      string    `json:"id"`
-	From    tgUser    `json:"from"`
+	ID      string     `json:"id"`
+	From    tgUser     `json:"from"`
 	Message *tgMessage `json:"message,omitempty"`
-	Data    string    `json:"data,omitempty"`
+	Data    string     `json:"data,omitempty"`
 }
 
 func normalizeUpdate(u tgUpdate) types.BotUpdate {

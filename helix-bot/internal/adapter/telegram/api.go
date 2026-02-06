@@ -26,7 +26,7 @@ func baseURL(token string) string {
 // tgAPIResponse is the common Telegram API response envelope.
 type tgAPIResponse struct {
 	OK          bool            `json:"ok"`
-	Result      json.RawMessage  `json:"result,omitempty"`
+	Result      json.RawMessage `json:"result,omitempty"`
 	Description string          `json:"description,omitempty"`
 	ErrorCode   int             `json:"error_code,omitempty"`
 	Parameters  *tgAPIErrParams `json:"parameters,omitempty"`

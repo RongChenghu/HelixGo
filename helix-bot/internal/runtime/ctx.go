@@ -9,11 +9,11 @@ import (
 )
 
 type ctxImpl struct {
-	update   types.BotUpdate
+	update    types.BotUpdate
 	requestID string
-	logger   ports.Logger
-	client   ports.TelegramClient
-	bag      map[string]any
+	logger    ports.Logger
+	client    ports.TelegramClient
+	bag       map[string]any
 }
 
 // NewCtx builds a Ctx for the given update (used by runtime to pass to handler).
@@ -27,13 +27,13 @@ func NewCtx(update types.BotUpdate, requestID string, logger ports.Logger, clien
 	}
 }
 
-func (c *ctxImpl) Update() any                          { return c.update.Raw }
-func (c *ctxImpl) UpdateID() int64                      { return c.update.UpdateID }
-func (c *ctxImpl) RequestID() string                    { return c.requestID }
-func (c *ctxImpl) Logger() ports.Logger                 { return c.logger }
-func (c *ctxImpl) Get(key string) (any, bool)           { v, ok := c.bag[key]; return v, ok }
-func (c *ctxImpl) Set(key string, val any)              { c.bag[key] = val }
-func (c *ctxImpl) NowUnix() int64                       { return time.Now().Unix() }
+func (c *ctxImpl) Update() any                { return c.update.Raw }
+func (c *ctxImpl) UpdateID() int64            { return c.update.UpdateID }
+func (c *ctxImpl) RequestID() string          { return c.requestID }
+func (c *ctxImpl) Logger() ports.Logger       { return c.logger }
+func (c *ctxImpl) Get(key string) (any, bool) { v, ok := c.bag[key]; return v, ok }
+func (c *ctxImpl) Set(key string, val any)    { c.bag[key] = val }
+func (c *ctxImpl) NowUnix() int64             { return time.Now().Unix() }
 
 func (c *ctxImpl) ChatID() int64 {
 	if c.update.Message != nil {
@@ -133,4 +133,3 @@ func (c *ctxImpl) SendDocument(chatID int64, doc types.InputFile, opts ...types.
 	}
 	return c.client.SendDocument(chatID, doc, opt)
 }
-

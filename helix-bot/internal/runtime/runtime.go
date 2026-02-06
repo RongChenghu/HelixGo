@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"helix-bot/internal/router"
 	"helix-bot/pkg/ports"
@@ -30,17 +31,31 @@ func routeKey(u types.BotUpdate) string {
 	return "unknown"
 }
 
+// RuntimeState is a read-only snapshot of runtime state for health checks.
+type RuntimeState struct {
+	Started bool
+}
+
 // BotRuntime implements ports.Bot.
 type BotRuntime struct {
 	router *router.Router
 	source ports.UpdateSource
 	logger ports.Logger
 	client ports.TelegramClient
+
+	started atomic.Bool
 }
 
 // NewBotRuntime builds a Bot runtime.
 func NewBotRuntime(r *router.Router, source ports.UpdateSource, logger ports.Logger, client ports.TelegramClient) *BotRuntime {
 	return &BotRuntime{router: r, source: source, logger: logger, client: client}
+}
+
+// State returns a read-only snapshot of the runtime state.
+func (b *BotRuntime) State() RuntimeState {
+	return RuntimeState{
+		Started: b.started.Load(),
+	}
 }
 
 // Router implements ports.Bot.
@@ -60,6 +75,9 @@ func (b *BotRuntime) Run(ctx context.Context) error {
 		return err
 	}
 	defer func() { _ = b.source.Stop() }()
+
+	// Mark runtime as started once the source has been successfully started.
+	b.started.Store(true)
 
 	for {
 		select {

@@ -17,6 +17,10 @@ type Config struct {
 	PollOffsetFile string
 	// Mode: "polling" or "webhook" (v0.1 focus on polling).
 	Mode string
+	// WebhookSecret: TELEGRAM_WEBHOOK_SECRET, used in /tg/{secret}/webhook.
+	WebhookSecret string
+	// HTTPListenAddr: HTTP_LISTEN_ADDR, e.g. ":4000" (only used in webhook mode).
+	HTTPListenAddr string
 }
 
 // sanitizeToken keeps only valid Telegram bot token chars (digits, ':', letters, '-', '_').
@@ -39,6 +43,8 @@ func LoadFromEnv() Config {
 		TelegramPollingTimeout: 60 * time.Second,
 		PollOffsetFile:         strings.TrimSpace(os.Getenv("TELEGRAM_POLL_OFFSET_FILE")),
 		Mode:                   getEnv("TELEGRAM_MODE", "polling"),
+		WebhookSecret:          strings.TrimSpace(os.Getenv("TELEGRAM_WEBHOOK_SECRET")),
+		HTTPListenAddr:         getEnv("HTTP_LISTEN_ADDR", ":4000"),
 	}
 	if s := os.Getenv("TELEGRAM_POLLING_TIMEOUT"); s != "" {
 		if sec, err := strconv.Atoi(s); err == nil && sec > 0 {

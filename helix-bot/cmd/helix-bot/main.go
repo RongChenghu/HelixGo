@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 
 	"helix-bot/internal/app"
 	"helix-bot/internal/config"
+	"helix-bot/internal/runtime"
 	"helix-bot/pkg/ports"
 )
 
@@ -41,6 +43,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	switch cfg.Mode {
+	case "webhook":
+		log.Println("[helix-bot] mode=webhook (HTTP webhook)")
+	default:
+		log.Println("[helix-bot] mode=polling (long polling)")
+	}
+
 	bot := app.New(cfg)
 	// Minimal loop: /ping -> pong; any other text -> NotFound reply (for B3 acceptance).
 	bot.Router().OnCommand("/ping", func(ctx ports.Ctx) error {
@@ -57,15 +66,77 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// In polling mode, expose /healthz and /readyz via a lightweight HTTP server
+	// on the same HTTP_LISTEN_ADDR as webhook mode. Webhook mode reuses the
+	// webhook HTTP server (handlers registered in WebhookSource).
+	if cfg.Mode != "webhook" {
+		if rt, ok := bot.(*runtime.BotRuntime); ok {
+			startHealthServer(ctx, cfg.HTTPListenAddr, rt)
+		}
+	}
+
 	go func() {
 		<-ctx.Done()
 		log.Println("[helix-bot] shutting down")
 	}()
 
-	log.Println("[helix-bot] polling started, waiting for updates...")
+	if cfg.Mode == "webhook" {
+		log.Println("[helix-bot] webhook started, waiting for updates...")
+	} else {
+		log.Println("[helix-bot] polling started, waiting for updates...")
+	}
 	if err := bot.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Printf("[helix-bot] run error: %v", err)
 		os.Exit(1)
 	}
 	log.Println("[helix-bot] stopped")
+}
+
+// startHealthServer starts an HTTP server that serves /healthz and /readyz.
+// /healthz: process alive -> 200
+// /readyz: runtime.State.Started == true -> 200, otherwise 503.
+func startHealthServer(ctx context.Context, addr string, rt *runtime.BotRuntime) {
+	if addr == "" {
+		addr = ":4000"
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("ok"))
+	})
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		state := rt.State()
+		if !state.Started {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			_, _ = w.Write([]byte("not ready"))
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("ok"))
+	})
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+		_ = srv.Shutdown(context.Background())
+	}()
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("[helix-bot] health server error: %v", err)
+		}
+	}()
 }
