@@ -1,50 +1,53 @@
 package telegram
 
-import (
-	"sync"
-)
-
 const defaultDedupWindow = 2000
 
-// dedupSet keeps a bounded set of update_id to skip duplicates (Telegram may re-send boundary updates).
-type dedupSet struct {
-	mu   sync.Mutex
-	m    map[int64]struct{}
-	max  int
+// Deduper 用于维护最近 N 个 update_id，防止重复执行 handler。
+// 结构：一个定长 ring + 一个 map 做 O(1) 查重。
+type Deduper struct {
+	cap  int        // 窗口大小
+	ring []int64    // 环形数组，存最近的 id
+	idx  int        // 当前写入位置
+	seen map[int64]struct{}
 }
 
-func newDedupSet(window int) *dedupSet {
+// NewDeduper 创建一个指定容量的去重器；容量 <=0 时使用默认值。
+func NewDeduper(window int) *Deduper {
 	if window <= 0 {
 		window = defaultDedupWindow
 	}
-	return &dedupSet{m: make(map[int64]struct{}), max: window}
+	return &Deduper{
+		cap:  window,
+		ring: make([]int64, 0, window),
+		seen: make(map[int64]struct{}, window),
+	}
 }
 
-// Seen returns true if id was already added (duplicate).
-func (d *dedupSet) Seen(id int64) bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	_, ok := d.m[id]
-	return ok
-}
+// Seen 在 update_id 进入处理前调用：
+//   - 如果之前见过：返回 true（调用方应跳过本次处理）
+//   - 如果没见过：记录进窗口并返回 false
+func (d *Deduper) Seen(id int64) bool {
+	if d.cap <= 0 {
+		return false
+	}
+	if _, ok := d.seen[id]; ok {
+		return true
+	}
 
-// Add adds id and evicts oldest (smallest update_id) if over capacity.
-func (d *dedupSet) Add(id int64) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	if _, ok := d.m[id]; ok {
-		return
+	// 先把新 id 放入 ring / seen，再处理淘汰逻辑。
+	if len(d.ring) < d.cap {
+		d.ring = append(d.ring, id)
+	} else {
+		// 环形写入：淘汰最老的一个 id。
+		evict := d.ring[d.idx]
+		delete(d.seen, evict)
+		d.ring[d.idx] = id
 	}
-	for len(d.m) >= d.max {
-		var minID int64
-		first := true
-		for k := range d.m {
-			if first || k < minID {
-				minID = k
-				first = false
-			}
-		}
-		delete(d.m, minID)
+	d.seen[id] = struct{}{}
+
+	d.idx++
+	if d.idx >= d.cap {
+		d.idx = 0
 	}
-	d.m[id] = struct{}{}
+	return false
 }

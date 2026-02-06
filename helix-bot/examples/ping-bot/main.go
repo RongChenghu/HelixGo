@@ -34,14 +34,13 @@ func main() {
 		_, err := ctx.ReplyText("pong")
 		return err
 	})
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	go func() {
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		<-sig
-		cancel()
+		<-ctx.Done()
+		log.Println("[ping-bot] shutting down")
 	}()
 	log.Println("[ping-bot] run; send /ping to get pong")
 	_ = bot.Run(ctx)
+	log.Println("[ping-bot] stopped")
 }

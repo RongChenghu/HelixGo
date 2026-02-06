@@ -54,14 +54,12 @@ func main() {
 		return nil
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	go func() {
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		<-sig
-		cancel()
+		<-ctx.Done()
+		log.Println("[helix-bot] shutting down")
 	}()
 
 	log.Println("[helix-bot] polling started, waiting for updates...")
@@ -69,5 +67,5 @@ func main() {
 		log.Printf("[helix-bot] run error: %v", err)
 		os.Exit(1)
 	}
-	log.Println("[helix-bot] shutdown")
+	log.Println("[helix-bot] stopped")
 }

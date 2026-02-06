@@ -1,9 +1,6 @@
 package errors
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
 
 // Contract-level errors (stable; implementations use err wrapping).
 var (
@@ -17,15 +14,38 @@ var (
 	ErrTelegramAPI = errors.New("helix-bot: telegram api error")
 )
 
-// TelegramAPIErr wraps ErrTelegramAPI with error_code and description (no token/body).
-func TelegramAPIErr(code int, description string) error {
-	return fmt.Errorf("%w: code=%d desc=%s", ErrTelegramAPI, code, description)
+// TelegramError carries structured Telegram API error details.
+// It is always wrapped by ErrTelegramAPI or ErrRateLimited.
+type TelegramError struct {
+	Code        int    // Telegram error_code or HTTP status code
+	Description string // Telegram description or HTTP status text
+	RetryAfter  int    // seconds, only meaningful for 429
 }
 
-// RateLimitedErr wraps ErrRateLimited with optional retry_after seconds.
-func RateLimitedErr(retryAfterSec int) error {
-	if retryAfterSec <= 0 {
-		return ErrRateLimited
+func (e *TelegramError) Error() string {
+	// Minimal string; callers should prefer accessing fields via errors.As.
+	if e == nil {
+		return ""
 	}
-	return fmt.Errorf("%w: retry_after=%d", ErrRateLimited, retryAfterSec)
+	if e.RetryAfter > 0 {
+		return "telegram api error"
+	}
+	return "telegram api error"
+}
+
+// TelegramAPIErr wraps ErrTelegramAPI with TelegramError (no retry_after).
+func TelegramAPIErr(code int, description string) error {
+	return errors.Join(ErrTelegramAPI, &TelegramError{
+		Code:        code,
+		Description: description,
+	})
+}
+
+// RateLimitedErr wraps ErrRateLimited with TelegramError including retry_after.
+func RateLimitedErr(code int, description string, retryAfterSec int) error {
+	return errors.Join(ErrRateLimited, &TelegramError{
+		Code:        code,
+		Description: description,
+		RetryAfter:  retryAfterSec,
+	})
 }
