@@ -62,21 +62,21 @@ func doGet(ctx context.Context, baseURL string, method string, params url.Values
 		if code == 0 && resp.StatusCode != http.StatusOK {
 			code = resp.StatusCode
 		}
+		desc := api.Description
+		if desc == "" && resp.StatusCode != http.StatusOK {
+			desc = resp.Status
+		}
 		logAPI(method, dur, code)
 		if api.ErrorCode == 429 {
 			retry := 0
 			if api.Parameters != nil {
 				retry = api.Parameters.RetryAfter
 			}
-			return nil, errors.RateLimitedErr(retry)
-		}
-		desc := api.Description
-		if desc == "" && resp.StatusCode != http.StatusOK {
-			desc = resp.Status
+			return nil, errors.RateLimitedErr(code, desc, retry)
 		}
 		return nil, errors.TelegramAPIErr(code, desc)
 	}
-	logAPI(method, dur, 0)
+	// 成功时不打日志，避免空轮询刷屏；由 Source 在有 updates 时打 batch 日志。
 	return api.Result, nil
 }
 
@@ -105,25 +105,24 @@ func doPost(ctx context.Context, baseURL string, method string, body map[string]
 		if code == 0 && resp.StatusCode != http.StatusOK {
 			code = resp.StatusCode
 		}
+		desc := api.Description
+		if desc == "" && resp.StatusCode != http.StatusOK {
+			desc = resp.Status
+		}
 		logAPI(method, dur, code)
 		if api.ErrorCode == 429 {
 			retry := 0
 			if api.Parameters != nil {
 				retry = api.Parameters.RetryAfter
 			}
-			return nil, errors.RateLimitedErr(retry)
-		}
-		desc := api.Description
-		if desc == "" && resp.StatusCode != http.StatusOK {
-			desc = resp.Status
+			return nil, errors.RateLimitedErr(code, desc, retry)
 		}
 		return nil, errors.TelegramAPIErr(code, desc)
 	}
-	logAPI(method, dur, 0)
 	return api.Result, nil
 }
 
-// logAPI logs only endpoint, duration, and error_code (no token, no body).
+// logAPI 仅在失败时打日志（endpoint、耗时、error_code），禁止 token/body。 logs only endpoint, duration, and error_code (no token, no body).
 func logAPI(endpoint string, dur time.Duration, errorCode int) {
 	if errorCode != 0 {
 		fmt.Printf("[telegram] %s duration=%v error_code=%d\n", endpoint, dur.Round(time.Millisecond), errorCode)

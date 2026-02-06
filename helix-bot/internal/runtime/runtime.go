@@ -2,13 +2,33 @@ package runtime
 
 import (
 	"context"
-	"runtime/debug"
 	"strconv"
+	"strings"
 
 	"helix-bot/internal/router"
 	"helix-bot/pkg/ports"
 	"helix-bot/pkg/types"
 )
+
+// routeKey 从 update 推导可打印的路由标识，禁止输出用户正文（仅命令或 "text"/"callback"）。
+func routeKey(u types.BotUpdate) string {
+	if u.Message != nil && u.Message.Text != "" {
+		text := strings.TrimSpace(u.Message.Text)
+		if idx := strings.Index(text, " "); idx > 0 {
+			text = text[:idx]
+		} else if idx := strings.Index(text, "\n"); idx > 0 {
+			text = text[:idx]
+		}
+		if strings.HasPrefix(text, "/") {
+			return text
+		}
+		return "text"
+	}
+	if u.CallbackQuery != nil {
+		return "callback"
+	}
+	return "unknown"
+}
 
 // BotRuntime implements ports.Bot.
 type BotRuntime struct {
@@ -53,15 +73,33 @@ func (b *BotRuntime) Run(ctx context.Context) error {
 				continue
 			}
 			c := NewCtx(u, requestID, b.logger, b.client)
+			var handlerErr error
+			panicked := false
 			func() {
 				defer func() {
-					if e := recover(); e != nil {
-						stack := debug.Stack()
-						b.logger.Error("handler panic", "err", e, "updateID", u.UpdateID, "stack", string(stack))
+					if recover() != nil {
+						panicked = true
+						// 不输出 panic 值/stack，避免泄露用户内容或 token。
+						b.logger.Error("handler panic", "update_id", u.UpdateID, "reason", "panic_recovered")
 					}
 				}()
-				_ = handler(c)
+				handlerErr = handler(c)
 			}()
+			handled := !panicked && handlerErr == nil
+			chatID := int64(0)
+			if u.Message != nil {
+				chatID = u.Message.ChatID
+			} else if u.CallbackQuery != nil {
+				chatID = u.CallbackQuery.ChatID
+			}
+			textLen := 0
+			if u.Message != nil && u.Message.Text != "" {
+				textLen = len(u.Message.Text)
+			}
+			b.logger.Info("update handled", "update_id", u.UpdateID, "chat_id", chatID, "route_key", routeKey(u), "text_len", textLen, "handled", handled)
+			if !handled && !panicked {
+				b.logger.Warn("handler error", "update_id", u.UpdateID, "reason", "handler_error")
+			}
 		case <-ctx.Done():
 			return b.source.Stop()
 		}

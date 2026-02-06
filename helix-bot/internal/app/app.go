@@ -12,7 +12,7 @@ import (
 func New(cfg config.Config) ports.Bot {
 	log := NewStdLogger("[helix-bot]")
 	client := telegram.NewClient(cfg.TelegramBotToken)
-	source := telegram.NewSource(cfg.TelegramBotToken, cfg.TelegramPollingTimeout, cfg.PollOffsetFile)
+	source := telegram.NewSource(cfg.TelegramBotToken, cfg.TelegramPollingTimeout, cfg.PollOffsetFile, log)
 	r := router.New()
 	rt := runtime.NewBotRuntime(r, source, log, client)
 	return rt
