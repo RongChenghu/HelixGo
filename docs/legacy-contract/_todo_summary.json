@@ -1,0 +1,60 @@
+{
+  "admin-auth.md": [],
+  "admin-admin-users.md": [
+    "Response: GET /admin/users",
+    "Permission: GET /admin/users",
+    "Response: POST /admin/users",
+    "Permission: POST /admin/users",
+    "Permission: PUT /admin/users/:userId/wallet-address",
+    "Response: GET /admin/admin-users",
+    "Response: GET /admin/admin-users/:id/roles",
+    "Response: POST /admin/admin-users"
+  ],
+  "admin-roles.md": [
+    "Request: GET /admin/admin-roles"
+  ],
+  "admin-audit.md": [
+    "Response: GET /admin/audit/logs"
+  ],
+  "admin-system-configs.md": [
+    "Request: GET /admin/system/configs",
+    "Response: GET /admin/system/configs",
+    "Permission: GET /admin/system/configs",
+    "Permission: PUT /admin/system/configs/:key"
+  ],
+  "admin-other.md": [
+    "Response: POST /admin/wallet/manual-credit",
+    "Permission: POST /admin/wallet/manual-credit",
+    "Response: POST /admin/wallet/manual-debit",
+    "Permission: POST /admin/wallet/manual-debit",
+    "Response: GET /admin/withdrawals",
+    "Permission: GET /admin/withdrawals",
+    "Response: POST /admin/withdrawals",
+    "Permission: POST /admin/withdrawals",
+    "Response: POST /admin/withdrawals/:id/approve",
+    "Permission: POST /admin/withdrawals/:id/approve",
+    "Response: POST /admin/withdrawals/:id/reject",
+    "Permission: POST /admin/withdrawals/:id/reject",
+    "Response: POST /admin/withdrawals/:id/pay",
+    "Permission: POST /admin/withdrawals/:id/pay",
+    "Response: GET /admin/transactions",
+    "Permission: GET /admin/transactions",
+    "Response: GET /admin/game/interactions",
+    "Permission: GET /admin/game/interactions",
+    "Response: GET /admin/game/participations",
+    "Permission: GET /admin/game/participations",
+    "Permission: GET /admin/game/interactions/:id",
+    "Response: POST /admin/game/welfare-interactions",
+    "Permission: POST /admin/game/welfare-interactions",
+    "Permission: POST /admin/game/interactions/:id/assign-hit-slots",
+    "Response: GET /admin/promotion/records",
+    "Response: GET /admin/promotion/summary",
+    "Response: GET /admin/promotion/trace",
+    "Permission: GET /admin/promotion/trace",
+    "Response: GET /admin/referral/logs",
+    "Permission: GET /admin/referral/logs",
+    "Response: GET /admin/reports/user-daily",
+    "Response: GET /admin/reports/platform-daily"
+  ],
+  "response-format.md": []
+}

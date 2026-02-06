@@ -1,0 +1,385 @@
+# Helix Bot v0.1 Interfaces
+
+> 本文定义 **helix-bot 对外暴露的最小接口契约**（SDK/Adapter 级）。
+>  目标：让业务项目只依赖这些接口，不依赖 Telegram 实现细节，不依赖 helix-api 内部代码。
+
+------
+
+## 0. Design Goals
+
+- **稳定契约**：业务项目只面向接口编程，底层实现可替换（官方 Bot API / 第三方库 / 自研 HTTP）。
+- **边界清晰**：helix-bot 只处理 Telegram IO + 通用基础设施（路由/中间件/幂等/限流/日志）。
+- **不含业务**：不包含积分/游戏/资金/交易等任何业务规则。
+
+------
+
+## 1. Core Types
+
+### 1.1 Handler / Middleware
+
+```
+type Handler func(ctx Ctx) error
+
+// Middleware wraps a handler and returns a new handler.
+type Middleware func(next Handler) Handler
+```
+
+**约定：**
+
+- handler 返回 error → 由框架 ErrorBoundary 统一处理（记录日志、可选回复通用错误提示），业务不应 panic。
+- middleware 应尽量无副作用；如需写入上下文，使用 `ctx.Set(...)`。
+
+------
+
+### 1.2 Logger (minimal)
+
+不强制绑定 zap/logrus，定义最小能力即可：
+
+```
+type Logger interface {
+  Debug(msg string, kv ...any)
+  Info(msg string, kv ...any)
+  Warn(msg string, kv ...any)
+  Error(msg string, kv ...any)
+}
+```
+
+------
+
+### 1.3 Clock (optional)
+
+用于可测试性（TTL/限流等），v0.1 可选：
+
+```
+type Clock interface {
+  NowUnix() int64
+}
+```
+
+------
+
+## 2. Context (Ctx)
+
+Ctx 是 handler 唯一可见对象。它抽象了 Telegram Update 的常用字段与发送能力。
+
+```
+type Ctx interface {
+  // Raw update (implementation-specific type; exposed as any).
+  Update() any
+
+  // IDs (0 means unknown/unavailable)
+  UpdateID() int64
+  ChatID() int64
+  UserID() int64
+  MessageID() int64
+
+  // Message basics (empty if not a message update)
+  Text() string
+  CallbackData() string
+
+  // Trace
+  RequestID() string
+  Logger() Logger
+
+  // KV bag (for middleware)
+  Get(key string) (any, bool)
+  Set(key string, val any)
+
+  // Telegram reply/send helpers (most common)
+  ReplyText(text string, opts ...SendOption) (MessageRef, error)
+  SendText(chatID int64, text string, opts ...SendOption) (MessageRef, error)
+
+  // Editing / callback query helpers
+  EditText(ref MessageRef, text string, opts ...EditOption) error
+  AnswerCallback(text string, opts ...AnswerOption) error
+
+  // Files
+  SendPhoto(chatID int64, photo InputFile, opts ...SendOption) (MessageRef, error)
+  SendDocument(chatID int64, doc InputFile, opts ...SendOption) (MessageRef, error)
+
+  // Utilities
+  NowUnix() int64
+}
+```
+
+**约定：**
+
+- `ReplyText` 优先使用“当前 message 所在 chat”，若不存在则返回错误 `ErrNoChatContext`。
+- `MessageRef` 用于编辑/删除等操作引用。
+- `Update()` 返回 `any`，避免接口层绑定具体 Telegram SDK 类型；实现层可在内部断言。
+
+------
+
+## 3. Telegram Client Abstraction
+
+为了让 router/ctx 不依赖具体 SDK，定义一个最小 TelegramClient：
+
+```
+type TelegramClient interface {
+  SendMessage(chatID int64, text string, opts SendOption) (MessageRef, error)
+  SendPhoto(chatID int64, photo InputFile, opts SendOption) (MessageRef, error)
+  SendDocument(chatID int64, doc InputFile, opts SendOption) (MessageRef, error)
+
+  EditMessageText(ref MessageRef, text string, opts EditOption) error
+  DeleteMessage(ref MessageRef) error
+
+  AnswerCallbackQuery(callbackID string, text string, opts AnswerOption) error
+  SendChatAction(chatID int64, action string) error
+}
+```
+
+> 注意：这里是抽象层，不规定如何实现重试、限流。
+>  实际实现（internal/telegram）必须确保调用安全与错误包装一致。
+
+------
+
+## 4. Update Source (Polling / Webhook)
+
+### 4.1 UpdateSource
+
+```
+type UpdateSource interface {
+  Start(ctx context.Context, out chan<- BotUpdate) error
+  Stop() error
+}
+```
+
+### 4.2 BotUpdate (normalized)
+
+```
+type BotUpdate struct {
+  Raw any
+
+  UpdateID int64
+
+  // One of these may be set depending on update type
+  Message       *BotMessage
+  CallbackQuery *BotCallbackQuery
+
+  // Future:
+  // InlineQuery, EditedMessage, ChatJoinRequest, etc.
+}
+type BotMessage struct {
+  ChatID    int64
+  UserID    int64
+  MessageID int64
+  Text      string
+  // Extendable metadata
+}
+
+type BotCallbackQuery struct {
+  ID        string  // callback query id (for answerCallbackQuery)
+  ChatID    int64
+  UserID    int64
+  MessageID int64
+  Data      string
+}
+```
+
+**约定：**
+
+- v0.1 必须支持 Message + CallbackQuery 两种。
+- 其它 update 类型可透传到 `Raw` 并由未来版本扩展。
+
+------
+
+## 5. Router
+
+### 5.1 Router Interface
+
+```
+type Router interface {
+  Use(mw ...Middleware)
+
+  OnCommand(cmd string, h Handler)         // e.g. "/start", "/ping"
+  OnText(m TextMatcher, h Handler)         // regex or predicate
+  OnCallback(m CallbackMatcher, h Handler) // prefix or predicate
+
+  SetNotFound(h Handler) // optional
+}
+```
+
+### 5.2 Matchers
+
+```
+type TextMatcher interface {
+  Match(text string) bool
+}
+
+type CallbackMatcher interface {
+  Match(data string) bool
+}
+```
+
+**推荐内置 matcher（实现层提供）：**
+
+- `Command("/ping")`
+- `TextPrefix("foo")`
+- `TextRegex(re)`
+- `CallbackPrefix("confirm:")`
+
+------
+
+## 6. Bot App (Runtime)
+
+### 6.1 Bot
+
+```
+type Bot interface {
+  Router() Router
+
+  Use(mw ...Middleware) // shortcut to Router.Use
+
+  Run(ctx context.Context) error
+  Shutdown(ctx context.Context) error
+}
+```
+
+**运行约定：**
+
+- `Run` 启动 UpdateSource（poll/webhook）并将 update 投递到 router。
+- 必须内置 ErrorBoundary（recover）。
+- 应支持 graceful shutdown（停止 source、关闭 goroutine、等待 in-flight handler）。
+
+------
+
+## 7. Store (Idempotency / Rate Limit)
+
+### 7.1 Store Interface
+
+```
+type Store interface {
+  Get(ctx context.Context, key string) (val string, ok bool, err error)
+  Set(ctx context.Context, key string, val string, ttlSeconds int64) error
+  Delete(ctx context.Context, key string) error
+
+  // Optional atomic add (useful for rate limit); if not supported, implement in-memory fallback
+  Incr(ctx context.Context, key string, ttlSeconds int64) (newVal int64, err error)
+}
+```
+
+**约定：**
+
+- v0.1 默认提供 MemoryStore。
+- RedisStore 可在 v0.2 扩展，接口保持不变。
+
+------
+
+## 8. Idempotency / Rate Limit Policies
+
+本节是**行为契约**，不限制实现方式。
+
+### 8.1 IdempotencyPolicy
+
+```
+type IdempotencyPolicy interface {
+  // returns (key, ttlSeconds, ok)
+  KeyForUpdate(u BotUpdate) (string, int64, bool)
+}
+```
+
+默认策略建议：
+
+- key: `tg:update:{update_id}`
+- ttl: 600 秒
+
+### 8.2 RateLimitPolicy
+
+```
+type RateLimitPolicy interface {
+  // returns (key, limit, windowSeconds, ok)
+  KeyForSend(chatID int64, userID int64, method string) (string, int64, int64, bool)
+}
+```
+
+默认策略建议：
+
+- 全局发送：每秒 N 条
+- per-chat：每秒 M 条
+
+------
+
+## 9. Options / DTOs
+
+### 9.1 MessageRef
+
+```
+type MessageRef struct {
+  ChatID    int64
+  MessageID int64
+}
+```
+
+### 9.2 InputFile
+
+v0.1 定义 3 种来源：
+
+```
+type InputFile struct {
+  // Exactly one should be set
+  FileID   string // Telegram file_id
+  URL      string // http(s) url
+  LocalPath string // local file path (implementation decides how to open)
+}
+```
+
+### 9.3 SendOption / EditOption / AnswerOption
+
+v0.1 只定义常用字段，未来可扩展（保持向后兼容）。
+
+```
+type SendOption struct {
+  ParseMode   string // "MarkdownV2" / "HTML" / ""
+  DisablePreview bool
+  ReplyToMessageID int64
+  ReplyMarkup any // inline keyboard, etc (kept as any to avoid SDK lock-in)
+}
+
+type EditOption struct {
+  ParseMode string
+  ReplyMarkup any
+}
+
+type AnswerOption struct {
+  ShowAlert bool
+}
+```
+
+------
+
+## 10. Errors (contract-level)
+
+建议在 pkg 层定义一组稳定错误码/错误类型（实现层用 err wrapping）：
+
+- `ErrNoChatContext`：当前 update 无 chat/message，无法 reply
+- `ErrRateLimited`：触发限流（可以包含 retryAfter）
+- `ErrDuplicateUpdate`：幂等去重命中（默认应静默忽略，不报错给业务）
+- `ErrTelegramAPI`：Telegram 返回非 2xx（包含 method/status/description）
+
+> v0.1 行为建议：
+>
+> - Duplicate update：middleware 直接 `Abort`（不调用 handler），并记 debug log。
+> - Rate limit：发送侧返回 ErrRateLimited；handler 可选择重试/降级。
+
+------
+
+## 11. Compatibility Notes
+
+- 本接口层不绑定 helix-api；helix-bot 与业务/helix-api 的关系应通过：
+  - HTTP（推荐）
+  - 事件（未来 helix-event）
+  - 接口注入（业务实现 BotService，由 bot 调用）
+- 本接口层不绑定任何 Telegram SDK；实现可以替换而不影响业务 handler。
+
+------
+
+## 12. Minimal Acceptance (v0.1)
+
+实现完成后应能满足以下最小验收用例（见 README）：
+
+1. polling 模式启动
+2. /ping → pong
+3. callback query 能 answer
+4. webhook 重复投递不重复执行 handler
+5. panic 不影响主循环
+6. 发送消息具备基础限流

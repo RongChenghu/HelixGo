@@ -1,0 +1,218 @@
+[
+  {
+    "method": "GET",
+    "path": "/admin/auth/me",
+    "source": "server/src/routes/adminAuth.js:64",
+    "group": "Auth"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/auth/login",
+    "source": "server/src/routes/adminAuth.js:13",
+    "group": "Auth"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/auth/change-password",
+    "source": "server/src/routes/adminAuth.js:98",
+    "group": "Auth"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/users",
+    "source": "server/src/routes/adminUsers.js:10",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/users",
+    "source": "server/src/routes/adminUsers.js:120",
+    "group": "Users"
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/users/:userId/wallet-address",
+    "source": "server/src/routes/adminUsers.js:51",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/wallet/manual-credit",
+    "source": "server/src/routes/adminWallet.js:11",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/wallet/manual-debit",
+    "source": "server/src/routes/adminWallet.js:108",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/withdrawals",
+    "source": "server/src/routes/adminWithdrawals.js:142",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/withdrawals",
+    "source": "server/src/routes/adminWithdrawals.js:17",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/withdrawals/:id/approve",
+    "source": "server/src/routes/adminWithdrawals.js:183",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/withdrawals/:id/reject",
+    "source": "server/src/routes/adminWithdrawals.js:256",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/withdrawals/:id/pay",
+    "source": "server/src/routes/adminWithdrawals.js:342",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/transactions",
+    "source": "server/src/routes/adminTransactions.js:10",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/game/interactions",
+    "source": "server/src/routes/adminGame.js:14",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/game/participations",
+    "source": "server/src/routes/adminGame.js:336",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/game/interactions/:id",
+    "source": "server/src/routes/adminGame.js:393",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/game/welfare-interactions",
+    "source": "server/src/routes/adminGame.js:85",
+    "group": "Other"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/game/interactions/:id/assign-hit-slots",
+    "source": "server/src/routes/adminGame.js:475",
+    "group": "Other"
+  },
+  {
+    "method": "DELETE",
+    "path": "/admin/game/welfare-interactions/:id",
+    "source": "server/src/routes/adminGame.js:272",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/system/configs",
+    "source": "server/src/routes/adminSystemConfigs.js:11",
+    "group": "SystemConfigs"
+  },
+  {
+    "method": "PUT",
+    "path": "/admin/system/configs/:key",
+    "source": "server/src/routes/adminSystemConfigs.js:28",
+    "group": "SystemConfigs"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/promotion/records",
+    "source": "server/src/routes/adminPromotion.js:10",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/promotion/summary",
+    "source": "server/src/routes/adminPromotion.js:46",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/promotion/trace",
+    "source": "server/src/routes/adminPromotion.js:76",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/referral/logs",
+    "source": "server/src/routes/adminReferral.js:9",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/reports/user-daily",
+    "source": "server/src/routes/adminReports.js:19",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/reports/platform-daily",
+    "source": "server/src/routes/adminReports.js:115",
+    "group": "Other"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/admin-users",
+    "source": "server/src/routes/adminAdminUsers.js:10",
+    "group": "Users"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/admin-users/:id/roles",
+    "source": "server/src/routes/adminAdminUsers.js:185",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/admin-users",
+    "source": "server/src/routes/adminAdminUsers.js:36",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/admin-users/:id/enable",
+    "source": "server/src/routes/adminAdminUsers.js:83",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/admin-users/:id/reset-password",
+    "source": "server/src/routes/adminAdminUsers.js:134",
+    "group": "Users"
+  },
+  {
+    "method": "POST",
+    "path": "/admin/admin-users/:id/roles",
+    "source": "server/src/routes/adminAdminUsers.js:218",
+    "group": "Users"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/admin-roles",
+    "source": "server/src/routes/adminRoles.js:9",
+    "group": "Roles"
+  },
+  {
+    "method": "GET",
+    "path": "/admin/audit/logs",
+    "source": "server/src/routes/adminAudit.js:9",
+    "group": "Audit"
+  }
+]

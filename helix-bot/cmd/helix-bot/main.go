@@ -1,0 +1,73 @@
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/joho/godotenv"
+
+	"helix-bot/internal/app"
+	"helix-bot/internal/config"
+	"helix-bot/pkg/ports"
+)
+
+const (
+	version = "v0.1.0"
+	commit  = "dev"
+)
+
+func main() {
+	log.Printf("[helix-bot] %s (commit %s)", version, commit)
+
+	// Load .env in development. Load .env.development FIRST so real token is set before
+	// .env.example (godotenv Load() does not overwrite existing vars, so order matters).
+	if os.Getenv("GO_ENV") == "" || os.Getenv("GO_ENV") == "development" {
+		for _, path := range []string{
+			".env.development", "helix-bot/.env.development", // token first
+			".env.example", ".env", "helix-bot/.env.example", "helix-bot/.env",
+		} {
+			if err := godotenv.Load(path); err == nil && (path == ".env.development" || path == "helix-bot/.env.development") {
+				log.Println("[info] loaded", path)
+			}
+		}
+	}
+
+	cfg := config.LoadFromEnv()
+	if !cfg.Valid() {
+		log.Println("[helix-bot] missing required config: TELEGRAM_BOT_TOKEN")
+		os.Exit(1)
+	}
+
+	bot := app.New(cfg)
+	// Minimal loop: /ping -> pong; any other text -> NotFound reply (for B3 acceptance).
+	bot.Router().OnCommand("/ping", func(ctx ports.Ctx) error {
+		_, err := ctx.ReplyText("pong")
+		return err
+	})
+	bot.Router().SetNotFound(func(ctx ports.Ctx) error {
+		if ctx.ChatID() != 0 {
+			_, _ = ctx.ReplyText("Unknown command. Try /ping")
+		}
+		return nil
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+		<-sig
+		cancel()
+	}()
+
+	log.Println("[helix-bot] polling started, waiting for updates...")
+	if err := bot.Run(ctx); err != nil && ctx.Err() == nil {
+		log.Printf("[helix-bot] run error: %v", err)
+		os.Exit(1)
+	}
+	log.Println("[helix-bot] shutdown")
+}
