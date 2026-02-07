@@ -14,8 +14,8 @@ func TestSystemConfigServiceListAndUpsert(t *testing.T) {
 		t.Fatalf("expected empty list")
 	}
 
-	svc.Upsert("feature.enabled", "true")
-	svc.Upsert("max.count", "10")
+	svc.Upsert("feature.enabled", "true", "")
+	svc.Upsert("max.count", "10", "")
 
 	list := svc.List()
 	if len(list) != 2 {

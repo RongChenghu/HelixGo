@@ -51,7 +51,7 @@ func Bootstrap(cfg config.Config) *gin.Engine {
 	var adminRoleHandler *handler.AdminRoleHandler
 	if db != nil {
 		adminUserHandler = handler.NewAdminUserHandler(db, auditService)
-		adminRoleHandler = handler.NewAdminRoleHandler(db)
+		adminRoleHandler = handler.NewAdminRoleHandler(db, auditService)
 	}
 
 	return NewRouter(cfg, authHandler, healthHandler, systemConfigHandler, auditHandler, adminUserHandler, adminRoleHandler, permissionHandler, tokens)

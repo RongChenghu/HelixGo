@@ -17,6 +17,6 @@ func (s *SystemConfigService) List() []domain.SystemConfig {
 	return s.repo.List()
 }
 
-func (s *SystemConfigService) Upsert(key, value string) domain.SystemConfig {
-	return s.repo.Upsert(key, value)
+func (s *SystemConfigService) Upsert(key, value, description string) domain.SystemConfig {
+	return s.repo.Upsert(key, value, description)
 }

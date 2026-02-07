@@ -1,7 +1,7 @@
 {
   "welcomeBack": "欢迎回来",
-  "pageTitle": "Telegram 激励系统管理后台",
-  "pageDesc": "高效、安全、易用的红包与激励管理平台",
+  "pageTitle": "Helix 管理后台",
+  "pageDesc": "通用管理后台框架，高效、安全、易用",
   "loginSuccess": "登录成功",
   "loginSuccessDesc": "欢迎回来",
   "loginSubtitle": "请输入您的账号信息以登录管理后台",

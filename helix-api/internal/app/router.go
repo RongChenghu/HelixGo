@@ -75,6 +75,9 @@ func NewRouter(
 			middleware.JWTAuth(tokens),
 		)
 		adminRolesGroup.GET("", middleware.RequireAny(domain.PermAdminManage, domain.PermAdminRoleRead), adminRoles.List)
+		adminRolesGroup.POST("", middleware.RequireAny(domain.PermAdminManage, domain.PermAdminRoleWrite), adminRoles.Create)
+		adminRolesGroup.PUT("/:id", middleware.RequireAny(domain.PermAdminManage, domain.PermAdminRoleWrite), adminRoles.Update)
+		adminRolesGroup.DELETE("/:id", middleware.RequireAny(domain.PermAdminManage, domain.PermAdminRoleWrite), adminRoles.Delete)
 	}
 
 	return engine

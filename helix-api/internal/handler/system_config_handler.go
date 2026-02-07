@@ -28,7 +28,8 @@ func (h *SystemConfigHandler) List(c *gin.Context) {
 }
 
 type configUpdateRequest struct {
-	Value interface{} `json:"value"`
+	Value       interface{} `json:"value"`
+	Description *string     `json:"description"`
 }
 
 func (h *SystemConfigHandler) Upsert(c *gin.Context) {
@@ -40,7 +41,11 @@ func (h *SystemConfigHandler) Upsert(c *gin.Context) {
 	}
 
 	value := fmt.Sprintf("%v", req.Value)
-	h.service.Upsert(key, value)
+	description := ""
+	if req.Description != nil {
+		description = *req.Description
+	}
+	h.service.Upsert(key, value, description)
 	resp.JSONOK(c, gin.H{"ok": true})
 
 	if h.audit == nil {

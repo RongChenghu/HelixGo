@@ -141,7 +141,7 @@ curl -s -X POST http://localhost:8080/admin/admin-users/2/reset-password \
   -d '{"password":"newPass123"}'
 ```
 
-List admin roles (now including perms, v0.5):
+List admin roles (now including id and perms, v0.5):
 ```bash
 curl -s http://localhost:8080/admin/admin-roles \
   -H "Authorization: Bearer <token>"
@@ -151,6 +151,7 @@ Example response:
 ```json
 [
   {
+    "id": 1,
     "name": "admin",
     "description": "System administrator",
     "perms": [
@@ -164,6 +165,28 @@ Example response:
     ]
   }
 ]
+```
+
+Create role (requires admin.manage or admin.role.write):
+```bash
+curl -s -X POST http://localhost:8080/admin/admin-roles \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"operator","description":"运维角色","perms":["audit.read","system.config.read"]}'
+```
+
+Update role (description and perms only):
+```bash
+curl -s -X PUT http://localhost:8080/admin/admin-roles/2 \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"description":"运维与审计","perms":["audit.read","system.config.read","system.config.write"]}'
+```
+
+Delete role (built-in role `admin` cannot be deleted):
+```bash
+curl -s -X DELETE http://localhost:8080/admin/admin-roles/2 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Permissions dictionary (v0.5)
@@ -182,6 +205,7 @@ Example response:
   { "code": "admin.user.read", "description": "View admin users" },
   { "code": "admin.user.write", "description": "Manage admin users (create/enable/reset roles)" },
   { "code": "admin.role.read", "description": "View admin roles and their permissions" },
+  { "code": "admin.role.write", "description": "Manage admin roles (create/update/delete and set permissions)" },
   { "code": "system.config.read", "description": "Read system configs" },
   { "code": "system.config.write", "description": "Update system configs" },
   { "code": "audit.read", "description": "Read audit logs" }

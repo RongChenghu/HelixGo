@@ -24,7 +24,7 @@ SELECT
   `+"`key`"+`,
   `+"`value`"+`,
   IFNULL(description, '') AS description,
-  updated_at AS updatedAt
+  updated_at
 FROM admin_system_configs
 ORDER BY `+"`key`"+` ASC
 `)
@@ -35,14 +35,15 @@ ORDER BY `+"`key`"+` ASC
 	return items
 }
 
-func (r *systemConfigRepoMySQL) Upsert(key, value string) domain.SystemConfig {
+func (r *systemConfigRepoMySQL) Upsert(key, value, description string) domain.SystemConfig {
 	_, err := r.db.Exec(`
 INSERT INTO admin_system_configs (`+"`key`"+`, `+"`value`"+`, description)
-VALUES (?, ?, '')
+VALUES (?, ?, ?)
 ON DUPLICATE KEY UPDATE
   `+"`value`"+` = VALUES(`+"`value`"+`),
+  description = VALUES(description),
   updated_at = CURRENT_TIMESTAMP
-`, key, value)
+`, key, value, description)
 	if err != nil {
 		panic(fmt.Errorf("upsert system config: %w", err))
 	}
@@ -53,7 +54,7 @@ SELECT
   `+"`key`"+`,
   `+"`value`"+`,
   IFNULL(description, '') AS description,
-  updated_at AS updatedAt
+  updated_at
 FROM admin_system_configs
 WHERE `+"`key`"+` = ?
 LIMIT 1

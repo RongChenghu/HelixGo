@@ -18,7 +18,7 @@ func TestSystemConfigHandlerListJSONKeys(t *testing.T) {
 	svc := service.NewSystemConfigService(repo)
 	handler := NewSystemConfigHandler(svc, nil)
 
-	svc.Upsert("feature.enabled", "true")
+	svc.Upsert("feature.enabled", "true", "")
 
 	engine := gin.New()
 	engine.GET("/admin/system/configs", handler.List)

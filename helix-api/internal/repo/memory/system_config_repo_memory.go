@@ -32,14 +32,13 @@ func (r *SystemConfigRepoMemory) List() []domain.SystemConfig {
 	return list
 }
 
-func (r *SystemConfigRepoMemory) Upsert(key, value string) domain.SystemConfig {
+func (r *SystemConfigRepoMemory) Upsert(key, value, description string) domain.SystemConfig {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	existing := r.records[key]
 	record := domain.SystemConfig{
 		Key:         key,
 		Value:       value,
-		Description: existing.Description,
+		Description: description,
 		UpdatedAt:   time.Now(),
 	}
 	r.records[key] = record

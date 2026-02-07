@@ -4,6 +4,7 @@ export * from './systemConfig';
 export * from './adminUsers';
 export * from './adminRoles';
 export * from './adminAudit';
+export * from './permissions';
 
 // 导出 getAdminMe
 export { getAdminMe } from './auth';

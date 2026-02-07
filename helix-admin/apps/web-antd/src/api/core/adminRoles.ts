@@ -2,13 +2,24 @@ import { requestClient } from '#/api/request';
 
 export namespace AdminRolesApi {
   export interface Role {
+    id: number;
     name: string;
     description?: string;
     perms?: string[];
   }
 
-  // v0.4 简化为纯列表，保留对 { list: Role[] } 的兼容
   export type ListResult = Role[] | { list: Role[] };
+
+  export interface CreateBody {
+    name: string;
+    description?: string;
+    perms?: string[];
+  }
+
+  export interface UpdateBody {
+    description?: string;
+    perms?: string[];
+  }
 }
 
 /**
@@ -26,5 +37,39 @@ export async function getAdminRoles() {
     return res;
   }
   return res.list || [];
+}
+
+/**
+ * 新建角色
+ */
+export async function createRole(body: AdminRolesApi.CreateBody) {
+  return requestClient.post<{ id: number; name: string }>(
+    '/admin/admin-roles',
+    body,
+    { responseReturn: 'body' },
+  );
+}
+
+/**
+ * 更新角色（描述与权限）
+ */
+export async function updateRole(
+  id: number,
+  body: AdminRolesApi.UpdateBody,
+) {
+  return requestClient.put<{ id: number; name: string }>(
+    `/admin/admin-roles/${id}`,
+    body,
+    { responseReturn: 'body' },
+  );
+}
+
+/**
+ * 删除角色（内置 admin 角色不可删）
+ */
+export async function deleteRole(id: number) {
+  return requestClient.delete<{ id: number }>(`/admin/admin-roles/${id}`, {
+    responseReturn: 'body',
+  });
 }
 

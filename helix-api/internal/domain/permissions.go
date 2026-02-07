@@ -13,7 +13,8 @@ const (
 	PermAdminUserRead  = "admin.user.read"
 	PermAdminUserWrite = "admin.user.write"
 
-	PermAdminRoleRead = "admin.role.read"
+	PermAdminRoleRead  = "admin.role.read"
+	PermAdminRoleWrite = "admin.role.write"
 
 	PermSystemConfigRead  = "system.config.read"
 	PermSystemConfigWrite = "system.config.write"
@@ -30,6 +31,7 @@ func AllPermissions() []Permission {
 		{Code: PermAdminUserWrite, Description: "Manage admin users (create/enable/reset roles)"},
 
 		{Code: PermAdminRoleRead, Description: "View admin roles and their permissions"},
+		{Code: PermAdminRoleWrite, Description: "Manage admin roles (create/update/delete and set permissions)"},
 
 		{Code: PermSystemConfigRead, Description: "Read system configs"},
 		{Code: PermSystemConfigWrite, Description: "Update system configs"},

@@ -19,14 +19,19 @@ export async function getSystemConfigs() {
 }
 
 /**
- * 更新系统配置
+ * 更新/新增系统配置
  * @param key - 配置键
  * @param value - 配置值
+ * @param description - 可选描述
  */
-export async function updateSystemConfig(key: string, value: string) {
+export async function updateSystemConfig(
+  key: string,
+  value: string,
+  description?: string,
+) {
   return requestClient.put<{ ok: boolean }>(
     `/admin/system/configs/${key}`,
-    { value },
-    { responseReturn: 'body' }
+    { value, description },
+    { responseReturn: 'body' },
   );
 }
