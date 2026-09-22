@@ -245,10 +245,16 @@ type tgUpdate struct {
 }
 
 type tgMessage struct {
-	MessageID int64   `json:"message_id"`
-	Chat      tgChat  `json:"chat"`
-	From      *tgUser `json:"from,omitempty"`
-	Text      string  `json:"text,omitempty"`
+	MessageID int64    `json:"message_id"`
+	Chat      tgChat   `json:"chat"`
+	From      *tgUser  `json:"from,omitempty"`
+	Text      string   `json:"text,omitempty"`
+	Dice      *tgDice  `json:"dice,omitempty"`
+}
+
+type tgDice struct {
+	Emoji string `json:"emoji"`
+	Value int    `json:"value"`
 }
 
 type tgChat struct {
@@ -276,6 +282,12 @@ func normalizeUpdate(u tgUpdate) types.BotUpdate {
 		}
 		if u.Message.From != nil {
 			nu.Message.UserID = u.Message.From.ID
+		}
+		if u.Message.Dice != nil {
+			nu.Message.Dice = &types.BotDice{
+				Emoji: u.Message.Dice.Emoji,
+				Value: u.Message.Dice.Value,
+			}
 		}
 	}
 	if u.CallbackQuery != nil {

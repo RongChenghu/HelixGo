@@ -10,13 +10,11 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"helix-bot/internal/app"
-	"helix-bot/internal/config"
+	"helix-bot/pkg/helixbot"
 	"helix-bot/pkg/ports"
 )
 
 func main() {
-	// Same env load order as cmd/helix-bot: .env.development first, then helix-bot/ paths for repo-root run.
 	if os.Getenv("GO_ENV") == "" || os.Getenv("GO_ENV") == "development" {
 		for _, path := range []string{
 			".env.development", "helix-bot/.env.development",
@@ -25,12 +23,12 @@ func main() {
 			_ = godotenv.Load(path)
 		}
 	}
-	cfg := config.LoadFromEnv()
+	cfg := helixbot.LoadConfigFromEnv()
 	if !cfg.Valid() {
 		log.Fatal("missing TELEGRAM_BOT_TOKEN")
 	}
-	bot := app.New(cfg)
-	bot.Router().OnCommand("/ping", func(ctx ports.Ctx) error {
+	bot := helixbot.MustNew(cfg)
+	bot.OnCommand("/ping", func(ctx ports.Ctx) error {
 		_, err := ctx.ReplyText("pong")
 		return err
 	})

@@ -27,8 +27,9 @@ func NewCtx(update types.BotUpdate, requestID string, logger ports.Logger, clien
 	}
 }
 
-func (c *ctxImpl) Update() any                { return c.update.Raw }
-func (c *ctxImpl) UpdateID() int64            { return c.update.UpdateID }
+func (c *ctxImpl) Update() any                   { return c.update.Raw }
+func (c *ctxImpl) Message() *types.BotMessage     { return c.update.Message }
+func (c *ctxImpl) UpdateID() int64                { return c.update.UpdateID }
 func (c *ctxImpl) RequestID() string          { return c.requestID }
 func (c *ctxImpl) Logger() ports.Logger       { return c.logger }
 func (c *ctxImpl) Get(key string) (any, bool) { v, ok := c.bag[key]; return v, ok }

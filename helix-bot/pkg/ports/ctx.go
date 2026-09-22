@@ -5,6 +5,8 @@ import "helix-bot/pkg/types"
 // Ctx is the only object handlers see (interfaces.md §2).
 type Ctx interface {
 	Update() any
+	// Message returns the normalized message, or nil if the update has no message (e.g. callback_query only).
+	Message() *types.BotMessage
 	UpdateID() int64
 	ChatID() int64
 	UserID() int64
